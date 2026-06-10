@@ -1,1 +1,667 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#2d6a4f"/><path d="M256 120 L420 270 L390 270 L390 400 L300 400 L300 310 L212 310 L212 400 L122 400 L122 270 L92 270 Z" fill="white"/></svg>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Haneffe">
+<meta name="theme-color" content="#2d6a4f">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>Projet Haneffe</title>
+<style>
+:root{
+  --green:#2d6a4f;--green-l:#e8f5ee;--green-t:#1a3d2e;
+  --orange:#c45c00;--orange-l:#fff3e8;--orange-t:#7a3800;
+  --red:#b91c1c;--red-l:#fef2f2;--red-t:#7f1d1d;
+  --blue:#1d4ed8;--blue-l:#eff6ff;--blue-t:#1e3a8a;
+  --bg:#f5f4f0;--surface:#fff;--s2:#f0efe9;--border:#e2e0d6;
+  --text:#1a1a18;--text2:#5c5c52;--text3:#9b9a8e;
+  --r:14px;--rs:8px;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg);font-family:-apple-system,'SF Pro Text',sans-serif;color:var(--text)}
+.app{display:flex;flex-direction:column;height:100%;height:100dvh}
+.topbar{background:var(--green);padding:calc(var(--safe-top)+12px) 16px 12px;flex-shrink:0;display:flex;align-items:center;gap:10px}
+.topbar-icon{font-size:20px}
+.topbar-text h1{font-size:15px;font-weight:700;color:#fff;letter-spacing:-.3px}
+.topbar-text p{font-size:11px;color:rgba(255,255,255,.7);margin-top:1px}
+.sync-bar{background:rgba(0,0,0,.18);padding:5px 16px;display:flex;align-items:center;gap:7px;font-size:11px;color:rgba(255,255,255,.9);flex-shrink:0}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#4ade80;flex-shrink:0}
+.sync-dot.pulse{animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px 6px}
+.bottomnav{background:var(--surface);border-top:1px solid var(--border);padding:8px 0 calc(var(--safe-bottom)+6px);display:flex;flex-shrink:0}
+.navitem{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0;cursor:pointer;color:var(--text3)}
+.navitem.active{color:var(--green)}
+.navitem svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.navitem span{font-size:10px;font-weight:500}
+.page{display:none}.page.active{display:block}
+.card{background:var(--surface);border-radius:var(--r);padding:15px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:11px}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.metric{background:var(--surface);border-radius:var(--r);padding:13px 14px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.metric.warn{background:var(--orange-l)}.metric.danger{background:var(--red-l)}.metric.ok{background:var(--green-l)}
+.mlabel{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+.mvalue{font-size:20px;font-weight:700;letter-spacing:-.5px}
+.metric.warn .mvalue{color:var(--orange)}.metric.danger .mvalue{color:var(--red)}.metric.ok .mvalue{color:var(--green)}
+.msub{font-size:10px;color:var(--text3);margin-top:1px}
+.alert{border-radius:var(--rs);padding:11px 13px;font-size:13px;margin-bottom:10px;display:flex;gap:9px;line-height:1.5}
+.alert.warn{background:var(--orange-l);color:var(--orange-t)}
+.alert.ok{background:var(--green-l);color:var(--green-t)}
+.alert.info{background:var(--blue-l);color:var(--blue-t)}
+.aico{font-size:16px;flex-shrink:0}
+.badge{display:inline-block;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600}
+.b-ok{background:var(--green-l);color:var(--green-t)}.b-warn{background:var(--orange-l);color:var(--orange-t)}
+.b-danger{background:var(--red-l);color:var(--red-t)}.b-grey{background:var(--s2);color:var(--text2)}
+.b-blue{background:var(--blue-l);color:var(--blue-t)}.b-diy{background:#dcfce7;color:#166534}
+.task-item{display:flex;align-items:flex-start;gap:12px;padding:13px 15px;border-bottom:1px solid var(--border);background:var(--surface)}
+.task-item:first-child{border-radius:var(--r) var(--r) 0 0}
+.task-item:last-child{border-bottom:none;border-radius:0 0 var(--r) var(--r)}
+.task-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-top:1px}
+.task-check.done{background:var(--green);border-color:var(--green);color:#fff}
+.task-body{flex:1;min-width:0}.task-title{font-size:14px;font-weight:500;line-height:1.4}
+.task-title.done{text-decoration:line-through;color:var(--text3)}
+.task-meta{font-size:12px;color:var(--text2);margin-top:3px}
+.task-date{font-size:11px;color:var(--text3);flex-shrink:0;margin-top:3px}
+.budget-item{padding:13px 15px;border-bottom:1px solid var(--border);background:var(--surface)}
+.budget-item:first-child{border-radius:var(--r) var(--r) 0 0}
+.budget-item:last-child{border-bottom:none;border-radius:0 0 var(--r) var(--r)}
+.budget-item.tr-gap{background:#fff8f8}.budget-item.tr-new{background:#fffbf5}.budget-item.tr-diy{background:#f0fdf6}
+.bi-name{font-size:14px;font-weight:500;margin-bottom:6px}
+.bi-amounts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:5px}
+.bi-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px}
+.bi-val{font-size:14px;font-weight:600}
+.bi-ecart{font-size:12px;font-weight:600;padding:3px 8px;border-radius:99px}
+.bi-ecart.neg{background:var(--red-l);color:var(--red-t)}.bi-ecart.pos{background:var(--green-l);color:var(--green-t)}
+.section-hd{font-size:13px;font-weight:700;color:var(--green);margin:18px 0 8px;display:flex;align-items:center;gap:7px}
+.phase-pill{background:var(--green);color:#fff;border-radius:99px;font-size:11px;padding:2px 9px}
+.total-bar{background:var(--surface);border-radius:var(--r);padding:14px 15px;display:flex;justify-content:space-between;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.total-bar .lbl{font-size:12px;color:var(--text2);font-weight:500;margin-bottom:2px}
+.total-bar .val{font-size:18px;font-weight:700}
+
+/* ===== DEVIS ===== */
+.scan-btn{background:var(--green);color:#fff;border:none;border-radius:var(--r);padding:18px 16px;width:100%;display:flex;align-items:center;justify-content:center;gap:10px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:16px;font-family:inherit;box-shadow:0 4px 14px rgba(45,106,79,.35)}
+.scan-btn:active{opacity:.85}
+.dcard{background:var(--surface);border-radius:var(--r);margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
+.dcard-hd{padding:14px 15px;display:flex;justify-content:space-between;align-items:flex-start;cursor:pointer}
+.dcard-name{font-size:15px;font-weight:700}
+.dcard-sub{font-size:12px;color:var(--text2);margin-top:2px}
+.dcard-amount{font-size:17px;font-weight:700;color:var(--green);text-align:right;white-space:nowrap}
+.dcard-body{border-top:1px solid var(--border);padding:12px 15px;display:none}
+.dcard-body.open{display:block}
+.dl{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
+.dl:last-child{border-bottom:none}
+.dl span:first-child{color:var(--text2);flex:1;line-height:1.4}
+.dl span:last-child{font-weight:600;white-space:nowrap}
+.dtotal{display:flex;justify-content:space-between;font-weight:700;font-size:15px;padding-top:10px;margin-top:6px;border-top:2px solid var(--border)}
+.dnotes{font-size:12px;color:var(--text2);margin-top:10px;padding:8px 10px;background:var(--s2);border-radius:var(--rs);line-height:1.5}
+.dactions{display:flex;gap:8px;margin-top:10px}
+.dbtn{flex:1;padding:10px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit}
+.dbtn-ok{background:var(--green-l);color:var(--green-t)}
+.dbtn-no{background:var(--red-l);color:var(--red-t)}
+.dbtn-del{background:var(--s2);color:var(--text2)}
+
+/* ===== MODAL ===== */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:flex-end}
+.modal-bg.open{display:flex}
+.modal{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 20px calc(var(--safe-bottom)+20px);width:100%;max-height:88vh;overflow-y:auto}
+.mhandle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+.mtitle{font-size:16px;font-weight:700;margin-bottom:16px}
+.field{margin-bottom:14px}
+.field label{font-size:12px;color:var(--text2);margin-bottom:5px;display:block;font-weight:500}
+.field input,.field textarea,.field select{width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 13px;font-size:15px;font-family:inherit;color:var(--text);background:var(--s2)}
+.field input:focus,.field textarea:focus{border-color:var(--green);background:#fff;outline:none}
+.field textarea{resize:none;min-height:70px;line-height:1.5}
+.mbtns{display:flex;gap:8px;margin-top:6px}
+.mbtns button{flex:1;padding:13px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;border:none;font-family:inherit}
+.mbtn-c{background:var(--s2);color:var(--text)}
+.mbtn-s{background:var(--green);color:#fff}
+.mbtn-d{background:var(--red-l);color:var(--red-t)}
+.photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.photo-opt{background:var(--s2);border:2px dashed var(--border);border-radius:var(--r);padding:22px 10px;text-align:center;cursor:pointer;font-size:13px;color:var(--text2);font-weight:500;-webkit-user-select:none}
+.photo-opt:active{background:var(--green-l);border-color:var(--green)}
+.photo-ico{font-size:30px;display:block;margin-bottom:8px}
+.preview-img{width:100%;border-radius:var(--rs);margin-bottom:14px;max-height:220px;object-fit:cover;display:block}
+.ai-box{text-align:center;padding:28px 16px}
+.ai-spin{width:38px;height:38px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ai-txt{font-size:13px;color:var(--text2);line-height:1.7}
+.btn{border:1px solid var(--border);border-radius:20px;padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;background:var(--surface);color:var(--text);font-family:inherit}
+.btn-g{background:var(--green);color:#fff;border-color:var(--green);width:100%;padding:13px;border-radius:12px;font-size:15px}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="topbar-icon">🏠</div>
+    <div class="topbar-text">
+      <h1>Projet Haneffe</h1>
+      <p>Oli &amp; Kri · Actes 18/08/2026</p>
+    </div>
+  </div>
+  <div class="sync-bar">
+    <div class="sync-dot" id="sdot"></div>
+    <span id="slabel">Connexion...</span>
+  </div>
+  <div class="scroll" id="scroll-area">
+
+    <!-- ACCUEIL -->
+    <div class="page active" id="page-home">
+      <div class="metrics" id="ov-metrics"></div>
+      <div id="ov-alerts"></div>
+      <div class="card-title" style="padding:0 2px 6px">🔑 Actions urgentes</div>
+      <div id="actions-list" style="margin-bottom:12px"></div>
+    </div>
+
+    <!-- BUDGET -->
+    <div class="page" id="page-budget">
+      <div class="total-bar">
+        <div><div class="lbl">Budget prévu</div><div class="val" id="tp">—</div></div>
+        <div style="text-align:right"><div class="lbl">Réel / devis</div><div class="val" id="tr">—</div></div>
+      </div>
+      <div id="budget-list"></div>
+      <button class="btn btn-g" style="margin-top:4px" onclick="openBModal()">+ Ajouter un poste</button>
+    </div>
+
+    <!-- PLANNING -->
+    <div class="page" id="page-planning">
+      <div id="planning-list"></div>
+      <div class="btn-row">
+        <button class="btn" onclick="openTModal(1)">+ Phase 1</button>
+        <button class="btn" onclick="openTModal(2)">+ Phase 2</button>
+        <button class="btn" onclick="openTModal(3)">+ Phase 3</button>
+      </div>
+    </div>
+
+    <!-- DEVIS -->
+    <div class="page" id="page-devis">
+      <button class="scan-btn" onclick="openScan()">
+        📸 &nbsp; Photographier un devis — l'IA l'analyse !
+      </button>
+      <div id="devis-list"></div>
+    </div>
+
+  </div>
+  <nav class="bottomnav">
+    <div class="navitem active" onclick="goPage('home',this)">
+      <svg viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>
+      <span>Accueil</span>
+    </div>
+    <div class="navitem" onclick="goPage('budget',this)">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v1m0 8v1m-3.5-5H15"/></svg>
+      <span>Budget</span>
+    </div>
+    <div class="navitem" onclick="goPage('planning',this)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>Planning</span>
+    </div>
+    <div class="navitem" onclick="goPage('devis',this)">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+      <span>Devis</span>
+    </div>
+  </nav>
+</div>
+
+<!-- MODAL SCAN -->
+<div class="modal-bg" id="m-scan">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <div class="mtitle">📸 Analyser un devis</div>
+    <div id="s1">
+      <div class="photo-grid">
+        <div class="photo-opt" onclick="document.getElementById('cam').click()">
+          <span class="photo-ico">📷</span>Prendre une photo
+        </div>
+        <div class="photo-opt" onclick="document.getElementById('fil').click()">
+          <span class="photo-ico">🖼️</span>Choisir une image
+        </div>
+      </div>
+      <input type="file" id="cam" accept="image/*" capture="environment" style="display:none" onchange="onPhoto(this)">
+      <input type="file" id="fil" accept="image/*" style="display:none" onchange="onPhoto(this)">
+      <p style="font-size:12px;color:var(--text3);text-align:center;line-height:1.6">Photographiez n'importe quel devis — l'IA extrait automatiquement toutes les informations</p>
+    </div>
+    <div id="s2" style="display:none">
+      <img id="prev" class="preview-img" src="" alt="">
+      <div class="mbtns">
+        <button class="mbtn-c" onclick="resetScan()">Rechoisir</button>
+        <button class="mbtn-s" onclick="analyze()">🤖 Analyser avec l'IA</button>
+      </div>
+    </div>
+    <div id="s3" style="display:none">
+      <div class="ai-box">
+        <div class="ai-spin"></div>
+        <div class="ai-txt" id="ai-msg">L'IA analyse votre devis...</div>
+      </div>
+    </div>
+    <div id="s4" style="display:none">
+      <div class="alert ok" style="margin-bottom:14px"><span class="aico">✅</span><div>Analyse terminée ! Vérifiez et sauvegardez.</div></div>
+      <div class="field"><label>Entreprise</label><input type="text" id="f-ent"></div>
+      <div class="field"><label>N° Devis · Date</label><input type="text" id="f-num"></div>
+      <div class="field"><label>Type de travaux</label><input type="text" id="f-trav"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field"><label>HTVA (€)</label><input type="number" id="f-htva"></div>
+        <div class="field"><label>TTC (€)</label><input type="number" id="f-ttc"></div>
+      </div>
+      <div class="field"><label>Postes principaux</label><textarea id="f-postes" style="min-height:90px"></textarea></div>
+      <div class="field"><label>Points clés</label><textarea id="f-notes"></textarea></div>
+      <div class="field"><label>Statut</label>
+        <select id="f-statut"><option>À étudier</option><option>Accepté</option><option>Refusé</option><option>En attente</option></select>
+      </div>
+      <div class="mbtns">
+        <button class="mbtn-c" onclick="closeM('m-scan')">Annuler</button>
+        <button class="mbtn-s" onclick="saveDevis()">💾 Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL BUDGET -->
+<div class="modal-bg" id="m-bud">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <div class="mtitle" id="mb-title">Nouveau poste</div>
+    <div class="field"><label>Nom du poste</label><input type="text" id="mb-nom"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="field"><label>Budget prévu (€)</label><input type="number" id="mb-prev" min="0"></div>
+      <div class="field"><label>Réel / Devis (€)</label><input type="number" id="mb-reel" min="0"></div>
+    </div>
+    <div class="field"><label>Statut</label>
+      <select id="mb-stat"><option>À faire</option><option>À devis</option><option>Devis reçu</option><option>Commandé</option><option>En cours</option><option>Terminé</option><option>À prévoir</option></select>
+    </div>
+    <div class="field"><label>Qui</label><input type="text" id="mb-qui"></div>
+    <div class="field"><label>Commentaires</label><textarea id="mb-com"></textarea></div>
+    <div class="mbtns">
+      <button class="mbtn-c" onclick="closeM('m-bud')">Annuler</button>
+      <button class="mbtn-d" id="mb-del" style="display:none" onclick="delBudget()">Supprimer</button>
+      <button class="mbtn-s" onclick="saveBudget()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL TACHE -->
+<div class="modal-bg" id="m-task">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <div class="mtitle" id="mt-title">Nouvelle tâche</div>
+    <div class="field"><label>Tâche</label><input type="text" id="mt-nom"></div>
+    <div class="field"><label>Date</label><input type="text" id="mt-date" placeholder="ex: 22/08/2026"></div>
+    <div class="field"><label>Statut</label>
+      <select id="mt-stat"><option>À faire</option><option>En cours</option><option>Fait ✓</option><option>Reporté</option><option>Annulé</option></select>
+    </div>
+    <div class="field"><label>Qui</label><input type="text" id="mt-qui"></div>
+    <div class="field"><label>Notes</label><textarea id="mt-com"></textarea></div>
+    <div class="mbtns">
+      <button class="mbtn-c" onclick="closeM('m-task')">Annuler</button>
+      <button class="mbtn-d" id="mt-del" style="display:none" onclick="delTask()">Supprimer</button>
+      <button class="mbtn-s" onclick="saveTask()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+<script>
+// DONNÉES PAR DÉFAUT
+const DA={
+  actions:[
+    {dl:"⚠️ Avant 20/06",a:"Valider/négocier les devis Fra Reno 001 & 002",s:"À faire"},
+    {dl:"⚠️ Avant 20/06",a:"Verser acompte 40% = 5 251,56 € (BE93 7320 6854 1867)",s:"À faire"},
+    {dl:"🔴 Urgent",a:"Relancer notaire — remise anticipée des clés (mail 29/05)",s:"À faire"},
+    {dl:"🔴 Urgent",a:"Vérifier si mur chambre/chambre porteur → éco. ~998 €",s:"À faire"},
+    {dl:"📋 Juin",a:"Devis aérogomage + mesures (prévu 08/06)",s:"À faire"},
+    {dl:"📋 Juin",a:"Choix chassis / baies vitrées (09/06)",s:"À faire"},
+    {dl:"📋 Juillet",a:"Réserver déménageur : Oli 22/08 + Kri 29/08",s:"À faire"},
+    {dl:"📅 18/08/2026",a:"🔑 Signature des actes chez le notaire",s:"À faire"},
+  ],
+  budget:[
+    {p:"Baies / ouvertures murs porteurs (Fra 001)",pv:9949,rl:9524.89,s:"Devis reçu",q:"Fra Reno",c:"Dans le budget ✓",t:"fra"},
+    {p:"Électricité (Fra 002 — partiel)",pv:0,rl:3604,s:"Devis reçu",q:"Fra Reno",c:"Tableau + spots à chiffrer",t:"new"},
+    {p:"Abattage mur chambre étage",pv:500,rl:0,s:"À faire",q:"DIY",c:"",t:"diy"},
+    {p:"Reconstruction cloison étage",pv:500,rl:0,s:"À faire",q:"DIY",c:"",t:"diy"},
+    {p:"Ponçage sols",pv:1800,rl:0,s:"À devis",q:"",c:"",t:"n"},
+    {p:"Chassis / menuiseries extérieures",pv:15000,rl:0,s:"À devis",q:"",c:"Commander tôt !",t:"n"},
+    {p:"Aérogommage façade",pv:3200,rl:0,s:"À devis",q:"",c:"",t:"n"},
+    {p:"Pose plancher chambre",pv:800,rl:0,s:"À faire",q:"",c:"~40€/m²×16m²",t:"n"},
+    {p:"Sols rez-de-chaussée",pv:1800,rl:0,s:"À faire",q:"",c:"",t:"n"},
+    {p:"WC et vestiaire",pv:2000,rl:0,s:"À faire",q:"",c:"",t:"n"},
+    {p:"Chauffage garage",pv:5000,rl:0,s:"À faire",q:"",c:"",t:"n"},
+    {p:"Peintures",pv:1500,rl:0,s:"À faire",q:"Oli-Kri",c:"",t:"n"},
+    {p:"Aménagements machines cave",pv:150,rl:0,s:"À faire",q:"",c:"",t:"n"},
+    {p:"Cuisine — électroménager",pv:5000,rl:0,s:"À faire",q:"",c:"",t:"n"},
+    {p:"Cuisine — meubles",pv:8000,rl:0,s:"À faire",q:"",c:"",t:"n"},
+    {p:"Containers tout-venant",pv:500,rl:0,s:"À devis",q:"",c:"",t:"n"},
+    {p:"Déménageur (22/08 + 29/08)",pv:0,rl:0,s:"À devis",q:"Oli-Kri",c:"Prévoir ~800-1500€",t:"new"},
+    {p:"Contrôle Socotec final",pv:0,rl:0,s:"À prévoir",q:"",c:"~300-500€",t:"new"},
+    {p:"Divers / Imprévus",pv:4300,rl:0,s:"À faire",q:"",c:"",t:"n"},
+  ],
+  p1:[
+    {d:"Avant 20/06",t:"Valider devis Fra Reno 001 & 002",s:"À faire",q:"Oli-Kri",c:"Validité 2 semaines !"},
+    {d:"Avant 20/06",t:"Verser acompte 40% Fra = 5 251,56 €",s:"À faire",q:"Oli",c:""},
+    {d:"08/06",t:"Devis aérogomage + mesure",s:"À faire",q:"",c:""},
+    {d:"09/06",t:"Choix chassis / baies vitrées",s:"À faire",q:"Oli-Kri",c:""},
+    {d:"Juillet",t:"Réserver déménageur 22/08 + 29/08",s:"À faire",q:"Oli-Kri",c:""},
+    {d:"01/08",t:"Achat plancher chambre",s:"À faire",q:"",c:""},
+    {d:"08/08",t:"Achat matériel cloison étage",s:"À faire",q:"",c:""},
+    {d:"16/08",t:"Relevé de compteurs",s:"À faire",q:"Oli-Kri",c:""},
+    {d:"18/08",t:"🔑 Actes notaire + remise clés",s:"À faire",q:"Oli-Kri",c:""},
+    {d:"19/08",t:"Préparation abattage mur + ponçage",s:"À faire",q:"Michel-Kri",c:""},
+    {d:"21/08",t:"Cloison étage + ponçage sols",s:"À faire",q:"Michel-Kri",c:""},
+    {d:"22/08",t:"🚚 Déménagement Oli",s:"À faire",q:"Oli-Kri",c:""},
+    {d:"28/08",t:"Suite aménagement étage",s:"À faire",q:"Oli-Kri",c:""},
+    {d:"29/08",t:"🚚 Déménagement Kri",s:"À faire",q:"Kri",c:""},
+  ],
+  p2:[
+    {d:"22/08",t:"Rangement meubles/caisses → garage (Oli)",s:"À faire",q:"Oli-Kri",c:""},
+    {d:"29/08",t:"Rangement meubles/caisses → garage (Kri)",s:"À faire",q:"Kri",c:""},
+  ],
+  p3:[{d:"05-06/09",t:"Nettoyage extérieurs",pr:"Haute",s:"À faire",c:""}],
+  devis:[
+    {id:1,ent:"Fra Reno srl",num:"2026/001 · 06/06/2026",trav:"Transformation — ouvertures murs porteurs",htva:8985.75,ttc:9524.89,st:"À étudier",postes:"Ouverture cuisine→salon 3 360€\nOuverture garage→ext ×2 1 990€\nOuverture cuisine→ext 995€\nOuverture chambre→chambre 1 995€\nCloison isolée 645€",notes:"Acompte 40% requis. Validité 2 semaines. Quantités présumées. Si mur non-porteur: prix chambre÷2."},
+    {id:2,ent:"Fra Reno srl",num:"2026/002 · 06/06/2026",trav:"Électricité — prises et sectionneur",htva:3400,ttc:3604,st:"À étudier",postes:"Sectionneur de terre 450€\nPrises simples ×20 à 95€ = 1 900€\nPrises doubles ×10 à 105€ = 1 050€\nTableau + interrupteurs à chiffrer",notes:"Devis partiel. Tableau 100% à changer (non inclus). Contrôle Socotec non inclus."},
+  ]
+};
+
+// ÉTAT
+let D={},eBi=-1,eTp=0,eTi=-1,photo64='',lastPush='';
+
+function def(){return JSON.parse(JSON.stringify(DA));}
+function load(){const s=localStorage.getItem('hpwa3');D=s?JSON.parse(s):def();if(!D.devis)D.devis=JSON.parse(JSON.stringify(DA.devis));}
+function save(){localStorage.setItem('hpwa3',JSON.stringify(D));push();}
+
+// GUN SYNC
+const GKEY='haneffe-oli-kri-4357-v3';
+let gun,gnode,gready=false;
+
+function initGun(){
+  try{
+    gun=Gun(['https://peer.wallie.io/gun']);
+    gnode=gun.get(GKEY);
+    syncDot('wait');
+    gnode.get('d').on(data=>{
+      if(!data)return;
+      try{
+        if(data===lastPush)return;
+        const r=JSON.parse(data);
+        if(JSON.stringify(r)!==JSON.stringify(D)){D=r;if(!D.devis)D.devis=[];localStorage.setItem('hpwa3',data);renderAll();}
+        syncDot('ok');gready=true;
+      }catch(e){syncDot('ok');gready=true;}
+    });
+    setTimeout(()=>{if(!gready)syncDot('ok');},4000);
+  }catch(e){syncDot('off');}
+}
+
+function push(){
+  if(!gnode)return;
+  const s=JSON.stringify(D);lastPush=s;
+  syncDot('sync');
+  gnode.get('d').put(s,a=>{syncDot(a.err?'err':'ok');});
+}
+
+function syncDot(st){
+  const d=document.getElementById('sdot'),l=document.getElementById('slabel');
+  if(!d||!l)return;
+  d.className='sync-dot';d.style.background='';
+  if(st==='ok'){d.style.background='#4ade80';l.textContent='Synchronisé avec Kristel ✓';}
+  else if(st==='sync'){d.className='sync-dot pulse';d.style.background='#fbbf24';l.textContent='Synchronisation...';}
+  else if(st==='wait'){d.className='sync-dot pulse';d.style.background='#fbbf24';l.textContent='Connexion...';}
+  else{d.style.background='#9b9a8e';l.textContent='Mode hors ligne';}
+}
+
+// NAV
+function goPage(n,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.navitem').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+n).classList.add('active');
+  el.classList.add('active');
+  document.getElementById('scroll-area').scrollTop=0;
+}
+
+// OVERVIEW
+function renderHome(){
+  const totP=D.budget.reduce((s,r)=>s+(parseFloat(r.pv)||0),0);
+  const jours=Math.ceil((new Date('2026-08-18')-new Date())/86400000);
+  document.getElementById('ov-metrics').innerHTML=`
+    <div class="metric"><div class="mlabel">Budget prévu</div><div class="mvalue">${Math.round(totP).toLocaleString('fr-BE')} €</div><div class="msub">total estimé</div></div>
+    <div class="metric warn"><div class="mlabel">Devis Fra</div><div class="mvalue">13 129 €</div><div class="msub">TTC confirmés</div></div>
+    <div class="metric danger"><div class="mlabel">Élec manquante</div><div class="mvalue">~3 604€+</div><div class="msub">non budgétée</div></div>
+    <div class="metric ok"><div class="mlabel">Actes notaire</div><div class="mvalue" style="font-size:15px">18/08/2026</div><div class="msub">J−${jours} jours</div></div>
+  `;
+  document.getElementById('ov-alerts').innerHTML=`
+    <div class="alert warn"><span class="aico">⚠️</span><div><strong>Acompte 40% avant le 20/06</strong> — 5 251,56 € sur BE93 7320 6854 1867</div></div>
+    <div class="alert ok"><span class="aico">✅</span><div><strong>Baies dans le budget</strong> — Fra 001 (9 525€) vs budget (9 949€) ✓</div></div>
+  `;
+  document.getElementById('actions-list').innerHTML=D.actions.map((a,i)=>{
+    const done=a.s==='Fait ✓';
+    const bc=a.dl.includes('⚠️')||a.dl.includes('🔴')?'b-danger':a.dl.includes('📅')?'b-grey':'b-blue';
+    const r=`border-radius:${i===0?'var(--r) var(--r) 0 0':i===D.actions.length-1?'0 0 var(--r) var(--r)':'0'}`;
+    const bb=i===D.actions.length-1?'border-bottom:none':'';
+    return`<div class="task-item" style="${r};${bb}" onclick="togAct(${i})">
+      <div class="task-check ${done?'done':''}">${done?'✓':''}</div>
+      <div class="task-body"><div class="task-title ${done?'done':''}">${a.a}</div>
+      <div class="task-meta"><span class="badge ${bc}">${a.dl}</span></div></div>
+    </div>`;
+  }).join('');
+}
+function togAct(i){D.actions[i].s=D.actions[i].s==='Fait ✓'?'À faire':'Fait ✓';save();renderHome();}
+
+// BUDGET
+function fmt(n){return(parseFloat(n)||0).toLocaleString('fr-BE',{minimumFractionDigits:0,maximumFractionDigits:2})+' €';}
+function renderBudget(){
+  const totP=D.budget.reduce((s,r)=>s+(parseFloat(r.pv)||0),0);
+  const totR=D.budget.reduce((s,r)=>s+(parseFloat(r.rl)||0),0);
+  document.getElementById('tp').textContent=fmt(totP);
+  document.getElementById('tr').textContent=totR>0?fmt(totR):'—';
+  document.getElementById('budget-list').innerHTML=D.budget.map((r,i)=>{
+    const p=parseFloat(r.pv)||0,rl=parseFloat(r.rl)||0,df=rl-p;
+    let ec='';if(rl>0){ec=`<span class="bi-ecart ${df>0?'neg':'pos'}">${df>=0?'+':''}${fmt(df)}</span>`;}
+    const tc=r.t==='new'?'tr-new':r.t==='diy'?'tr-diy':(rl>p&&p>0?'tr-gap':'');
+    const tb=r.t==='diy'?'<span class="badge b-diy">DIY</span> ':r.t==='new'?'<span class="badge b-warn">Nouveau</span> ':r.t==='fra'?'<span class="badge b-ok">Fra</span> ':'';
+    const sc=r.s==='Terminé'?'b-ok':r.s==='Devis reçu'?'b-blue':'b-grey';
+    const rt=`border-radius:${i===0?'var(--r) var(--r) 0 0':i===D.budget.length-1?'0 0 var(--r) var(--r)':'0'}`;
+    const bb=i===D.budget.length-1?'border-bottom:none':'';
+    return`<div class="budget-item ${tc}" style="${rt};${bb}" onclick="openBModal(${i})">
+      <div class="bi-name">${tb}${r.p}</div>
+      <div class="bi-amounts">
+        <div><div class="bi-lbl">Prévu</div><div class="bi-val" style="color:var(--text2)">${fmt(p)}</div></div>
+        ${rl>0?`<div><div class="bi-lbl">Réel</div><div class="bi-val">${fmt(rl)}</div></div>`:''}
+        ${ec}
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <span class="badge ${sc}">${r.s}</span>
+        ${r.q?`<span style="font-size:11px;color:var(--text3)">${r.q}</span>`:''}
+        ${r.c?`<span style="font-size:11px;color:var(--text3)">${r.c}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openBModal(i){
+  eBi=i!==undefined?i:-1;
+  const r=i!==undefined?D.budget[i]:{};
+  document.getElementById('mb-title').textContent=i!==undefined?'Modifier':'Nouveau poste';
+  document.getElementById('mb-nom').value=r.p||'';
+  document.getElementById('mb-prev').value=r.pv||'';
+  document.getElementById('mb-reel').value=r.rl||'';
+  document.getElementById('mb-stat').value=r.s||'À faire';
+  document.getElementById('mb-qui').value=r.q||'';
+  document.getElementById('mb-com').value=r.c||'';
+  document.getElementById('mb-del').style.display=i!==undefined?'block':'none';
+  openM('m-bud');
+}
+function saveBudget(){
+  const row={p:document.getElementById('mb-nom').value||'Poste',pv:parseFloat(document.getElementById('mb-prev').value)||0,rl:parseFloat(document.getElementById('mb-reel').value)||0,s:document.getElementById('mb-stat').value,q:document.getElementById('mb-qui').value,c:document.getElementById('mb-com').value,t:eBi>=0?D.budget[eBi].t:'n'};
+  if(eBi>=0)D.budget[eBi]=row;else D.budget.push(row);
+  save();closeM('m-bud');renderBudget();
+}
+function delBudget(){if(eBi>=0)D.budget.splice(eBi,1);save();closeM('m-bud');renderBudget();}
+
+// PLANNING
+function renderPlanning(){
+  const phases=[{n:1,l:'Préparation du déménagement',items:D.p1},{n:2,l:'Installation & emménagement',items:D.p2},{n:3,l:'Travaux après emménagement',items:D.p3}];
+  document.getElementById('planning-list').innerHTML=phases.map(ph=>`
+    <div class="section-hd"><div class="phase-pill">Phase ${ph.n}</div> ${ph.l}</div>
+    ${ph.items.map((r,i)=>{
+      const done=r.s==='Fait ✓';
+      const sc=done?'b-ok':r.s==='En cours'?'b-blue':'b-grey';
+      const isO=ph.items.length===1;
+      const rt=`border-radius:${isO?'var(--r)':i===0?'var(--r) var(--r) 0 0':i===ph.items.length-1?'0 0 var(--r) var(--r)':'0'}`;
+      const bb=isO||i===ph.items.length-1?'border-bottom:none':'';
+      const pb=ph.n===3&&r.pr?`<span class="badge ${r.pr==='Haute'?'b-danger':'b-warn'}">${r.pr}</span> `:'';
+      return`<div class="task-item" style="${rt};${bb}" onclick="openTModal(${ph.n},${i})">
+        <div class="task-check ${done?'done':''}" onclick="event.stopPropagation();togTask(${ph.n},${i})">${done?'✓':''}</div>
+        <div class="task-body"><div class="task-title ${done?'done':''}">${r.t}</div>
+        <div class="task-meta">${pb}<span class="badge ${sc}">${r.s}</span>${r.q?` <span style="font-size:11px;color:var(--text3)">${r.q}</span>`:''}</div></div>
+        <div class="task-date">${r.d}</div>
+      </div>`;
+    }).join('')}
+  `).join('');
+}
+function togTask(ph,i){const k='p'+ph;D[k][i].s=D[k][i].s==='Fait ✓'?'À faire':'Fait ✓';save();renderPlanning();}
+
+function openTModal(ph,i){
+  eTp=ph;eTi=i!==undefined?i:-1;
+  const k='p'+ph;const r=i!==undefined?D[k][i]:{};
+  document.getElementById('mt-title').textContent=i!==undefined?'Modifier la tâche':`Nouvelle tâche — Phase ${ph}`;
+  document.getElementById('mt-nom').value=r.t||'';
+  document.getElementById('mt-date').value=r.d||'';
+  document.getElementById('mt-stat').value=r.s||'À faire';
+  document.getElementById('mt-qui').value=r.q||'';
+  document.getElementById('mt-com').value=r.c||'';
+  document.getElementById('mt-del').style.display=i!==undefined?'block':'none';
+  openM('m-task');
+}
+function saveTask(){
+  const k='p'+eTp;
+  const row={t:document.getElementById('mt-nom').value||'Tâche',d:document.getElementById('mt-date').value||'?',s:document.getElementById('mt-stat').value,q:document.getElementById('mt-qui').value,c:document.getElementById('mt-com').value};
+  if(eTp===3)row.pr=D[k][eTi]?.pr||'Moyenne';
+  if(eTi>=0)D[k][eTi]=row;else D[k].push(row);
+  save();closeM('m-task');renderPlanning();
+}
+function delTask(){if(eTi>=0)D['p'+eTp].splice(eTi,1);save();closeM('m-task');renderPlanning();}
+
+// DEVIS
+function renderDevis(){
+  const list=document.getElementById('devis-list');
+  if(!D.devis||!D.devis.length){list.innerHTML='<div style="text-align:center;padding:30px;color:var(--text3);font-size:14px">Appuyez sur le bouton vert pour analyser votre premier devis !</div>';return;}
+  list.innerHTML=D.devis.map((d,i)=>{
+    const sc=d.st==='Accepté'?'b-ok':d.st==='Refusé'?'b-danger':d.st==='En attente'?'b-blue':'b-grey';
+    const postes=(d.postes||'').split('\n').filter(x=>x.trim()).map(x=>`<div class="dl"><span>${x}</span><span></span></div>`).join('');
+    return`<div class="dcard">
+      <div class="dcard-hd" onclick="togD(${i})">
+        <div style="flex:1;min-width:0">
+          <div class="dcard-name">${d.ent}</div>
+          <div class="dcard-sub">${d.num}</div>
+          <div style="margin-top:5px"><span class="badge ${sc}">${d.st}</span> <span style="font-size:11px;color:var(--text2)">${d.trav}</span></div>
+        </div>
+        <div style="margin-left:10px">
+          <div class="dcard-amount">${fmt(d.ttc)}</div>
+          <div style="font-size:10px;color:var(--text3);text-align:right">TTC</div>
+        </div>
+      </div>
+      <div class="dcard-body" id="db-${i}">
+        ${postes}
+        <div class="dtotal"><span>TOTAL TTC</span><span style="color:var(--green)">${fmt(d.ttc)}</span></div>
+        ${d.notes?`<div class="dnotes">📋 ${d.notes}</div>`:''}
+        <div class="dactions">
+          <button class="dbtn dbtn-ok" onclick="setDSt(${i},'Accepté')">✅ Accepter</button>
+          <button class="dbtn dbtn-no" onclick="setDSt(${i},'Refusé')">❌ Refuser</button>
+          <button class="dbtn dbtn-del" onclick="delD(${i})">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function togD(i){document.getElementById('db-'+i).classList.toggle('open');}
+function setDSt(i,s){D.devis[i].st=s;save();renderDevis();}
+function delD(i){if(confirm('Supprimer ce devis ?')){D.devis.splice(i,1);save();renderDevis();}}
+
+// SCAN
+const MSGS=['🔍 Lecture du devis...','💶 Extraction des montants...','📋 Identification des postes...','✅ Finalisation...'];
+let mInt;
+
+function openScan(){resetScan();openM('m-scan');}
+function resetScan(){
+  photo64='';
+  ['s1','s2','s3','s4'].forEach((id,i)=>document.getElementById(id).style.display=i===0?'block':'none');
+  document.getElementById('cam').value='';document.getElementById('fil').value='';
+}
+function onPhoto(inp){
+  const f=inp.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    photo64=e.target.result.split(',')[1];
+    document.getElementById('prev').src=e.target.result;
+    document.getElementById('s1').style.display='none';
+    document.getElementById('s2').style.display='block';
+  };
+  r.readAsDataURL(f);
+}
+async function analyze(){
+  document.getElementById('s2').style.display='none';
+  document.getElementById('s3').style.display='block';
+  let mi=0;
+  mInt=setInterval(()=>{document.getElementById('ai-msg').textContent=MSGS[mi++%MSGS.length];},1800);
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:'Expert devis travaux belges. Réponds UNIQUEMENT en JSON valide sans markdown.',
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:'image/jpeg',data:photo64}},
+          {type:'text',text:'Analyse ce devis et retourne exactement ce JSON:\n{"ent":"nom entreprise","num":"numéro · date","trav":"type travaux court","htva":0,"ttc":0,"postes":"ligne1\\nligne2\\nligne3","notes":"conditions importantes"}'}
+        ]}]
+      })
+    });
+    const data=await res.json();
+    clearInterval(mInt);
+    const parsed=JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
+    document.getElementById('f-ent').value=parsed.ent||'';
+    document.getElementById('f-num').value=parsed.num||'';
+    document.getElementById('f-trav').value=parsed.trav||'';
+    document.getElementById('f-htva').value=parsed.htva||'';
+    document.getElementById('f-ttc').value=parsed.ttc||'';
+    document.getElementById('f-postes').value=parsed.postes||'';
+    document.getElementById('f-notes').value=parsed.notes||'';
+    document.getElementById('s3').style.display='none';
+    document.getElementById('s4').style.display='block';
+  }catch(e){
+    clearInterval(mInt);
+    document.getElementById('ai-msg').innerHTML='❌ Erreur. Vérifiez que la photo est nette et réessayez.';
+    setTimeout(resetScan,2500);
+  }
+}
+function saveDevis(){
+  if(!D.devis)D.devis=[];
+  D.devis.push({
+    id:Date.now(),
+    ent:document.getElementById('f-ent').value,
+    num:document.getElementById('f-num').value,
+    trav:document.getElementById('f-trav').value,
+    htva:parseFloat(document.getElementById('f-htva').value)||0,
+    ttc:parseFloat(document.getElementById('f-ttc').value)||0,
+    st:document.getElementById('f-statut').value,
+    postes:document.getElementById('f-postes').value,
+    notes:document.getElementById('f-notes').value,
+  });
+  save();closeM('m-scan');renderDevis();
+}
+
+// MODALS
+function openM(id){document.getElementById(id).classList.add('open');document.body.style.overflow='hidden';}
+function closeM(id){document.getElementById(id).classList.remove('open');document.body.style.overflow='';}
+document.querySelectorAll('.modal-bg').forEach(bg=>bg.addEventListener('click',e=>{if(e.target===bg)closeM(bg.id);}));
+
+// INIT
+function renderAll(){renderHome();renderBudget();renderPlanning();renderDevis();}
+if('serviceWorker' in navigator)navigator.serviceWorker.register('/haneffe/sw.js').catch(()=>{});
+load();renderAll();initGun();
+</script>
+</body>
+</html>
