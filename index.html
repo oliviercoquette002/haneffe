@@ -817,7 +817,7 @@ function renderPhotos(){
   `;
   // Grid
   const grid=document.getElementById('photo-grid');
-  let html=`<label class="photo-add-btn"><span>📷</span>Ajouter<input type="file" accept="image/*" capture="environment" style="display:none" onchange="onPhotoCapture(this)"></label>`;
+  let html='';
   html+=photos.map((p,i)=>`
     <div class="photo-thumb" onclick="openViewer(${i})">
       <img src="${p.data}" alt="${p.caption||''}">
