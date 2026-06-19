@@ -219,6 +219,17 @@ body{font-family:-apple-system,'Inter','Segoe UI',sans-serif;background:var(--bg
 .cd-sub{font-size:11px;color:rgba(255,255,255,.5);margin-top:1px}
 .cd-icon{font-size:36px;opacity:.6}
 
+
+/* CAMERA LIVE */
+.camera-modal{display:none;position:fixed;inset:0;background:#000;z-index:300;flex-direction:column}
+.camera-modal.open{display:flex}
+.camera-video{flex:1;object-fit:cover;width:100%;background:#000}
+.camera-controls{background:#000;padding:24px 20px calc(env(safe-area-inset-bottom,0px)+24px);display:flex;align-items:center;justify-content:space-between}
+.camera-close{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.camera-snap{width:70px;height:70px;border-radius:50%;background:#fff;border:4px solid rgba(255,255,255,.4);cursor:pointer;transition:transform .1s}
+.camera-snap:active{transform:scale(.9)}
+.camera-flip{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
 /* PHOTOS */
 .photo-grid-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-bottom:12px}
 .photo-thumb{aspect-ratio:1;overflow:hidden;border-radius:var(--r-sm);cursor:pointer;position:relative;background:var(--slate200)}
@@ -804,6 +815,76 @@ document.querySelectorAll('.modal-overlay').forEach(bg=>bg.addEventListener('cli
 // PHOTOS
 let currentPhotoData='';
 let viewerPhotoIdx=-1;
+let cameraStream=null;
+let cameraFacing='environment';
+
+async function openCameraLive(){
+  try{
+    if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());
+    cameraStream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:cameraFacing,width:{ideal:1920},height:{ideal:1080}},audio:false
+    });
+    const video=document.getElementById('camera-video');
+    video.srcObject=cameraStream;
+    document.getElementById('camera-modal').classList.add('open');
+  }catch(e){
+    alert('Caméra non disponible. Utilisez Galerie à la place.');
+  }
+}
+
+function closeCamera(){
+  if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());
+  cameraStream=null;
+  document.getElementById('camera-modal').classList.remove('open');
+}
+
+async function flipCamera(){
+  cameraFacing=cameraFacing==='environment'?'user':'environment';
+  await openCameraLive();
+}
+
+function snapPhoto(){
+  const video=document.getElementById('camera-video');
+  const canvas=document.getElementById('camera-canvas');
+  const MAX=1200;
+  let w=video.videoWidth,h=video.videoHeight;
+  if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+  canvas.width=w;canvas.height=h;
+  const ctx=canvas.getContext('2d');
+  ctx.drawImage(video,0,0,w,h);
+  currentPhotoData=canvas.toDataURL('image/jpeg',0.82);
+  closeCamera();
+  document.getElementById('ph-preview').src=currentPhotoData;
+  document.getElementById('ph-caption').value='';
+  openM('m-photo');
+}
+
+function openGallery(){
+  document.getElementById('gal-input').click();
+}
+
+function onFileSelected(inp){
+  const f=inp.files[0];if(!f)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      const canvas=document.createElement('canvas');
+      const MAX=1200;
+      let w=img.width,h=img.height;
+      if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+      canvas.width=w;canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      currentPhotoData=canvas.toDataURL('image/jpeg',0.82);
+      document.getElementById('ph-preview').src=currentPhotoData;
+      document.getElementById('ph-caption').value='';
+      openM('m-photo');
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(f);
+  inp.value='';
+}
 
 function renderPhotos(){
   const photos=D.photos||[];
@@ -888,6 +969,18 @@ function delPhoto(i){
 function renderAll(){renderHome();renderBudget();renderPlanning();renderDevis();renderPhotos();}
 loadData().then(renderAll);
 </script>
+
+
+<!-- CAMERA LIVE -->
+<div class="camera-modal" id="camera-modal">
+  <video id="camera-video" class="camera-video" autoplay playsinline muted></video>
+  <canvas id="camera-canvas" style="display:none"></canvas>
+  <div class="camera-controls">
+    <button class="camera-close" onclick="closeCamera()">✕</button>
+    <button class="camera-snap" onclick="snapPhoto()"></button>
+    <button class="camera-flip" onclick="flipCamera()">🔄</button>
+  </div>
+</div>
 
 <!-- PHOTO VIEWER -->
 <div class="photo-viewer" id="photo-viewer" onclick="closeViewer()">
