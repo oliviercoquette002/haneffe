@@ -307,6 +307,18 @@ body{font-family:-apple-system,'Inter','Segoe UI',sans-serif;background:var(--bg
     <div id="devis-list"></div>
   </div>
 
+  <!-- PHOTOS -->
+  <div class="page" id="page-photos">
+    <div class="photo-stats" id="photo-stats"></div>
+    <div class="stitle" style="margin-bottom:12px">Album chantier</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <button class="scan-btn" style="margin:0;padding:14px;font-size:13px" onclick="openCameraLive()">📷 Caméra</button>
+      <button class="scan-btn" style="margin:0;padding:14px;font-size:13px;background:linear-gradient(135deg,var(--b500),#3b82f6)" onclick="openGallery()">🖼️ Galerie</button>
+    </div>
+    <input type="file" id="gal-input" accept="image/*" style="display:none" onchange="onFileSelected(this)">
+    <div class="photo-grid-gallery" id="photo-grid"></div>
+  </div>
+
 </div>
 
 <!-- MODAL SCAN -->
