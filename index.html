@@ -330,11 +330,11 @@ body{font-family:-apple-system,'Inter','Segoe UI',sans-serif;background:var(--bg
       <div class="photo-grid">
         <label class="photo-opt">
           <span class="photo-ico">📷</span>Photo / Image
-          <input type="file" accept="image/*,application/pdf" style="display:none" onchange="onFile(this)">
+          <input type="file" accept="image/*,application/pdf" style="opacity:0;position:absolute;width:0;height:0" onchange="onFile(this)">
         </label>
         <label class="photo-opt">
           <span class="photo-ico">📄</span>Fichier PDF
-          <input type="file" accept="application/pdf,image/*" style="display:none" onchange="onFile(this)">
+          <input type="file" accept="application/pdf,image/*" style="opacity:0;position:absolute;width:0;height:0" onchange="onFile(this)">
         </label>
       </div>
       <p style="font-size:12px;color:var(--slate400);text-align:center;line-height:1.6">L'IA extrait automatiquement entreprise, montants et postes</p>
@@ -442,7 +442,7 @@ const DA={
     {p:"Abattage mur chambre étage",pv:500,rl:0,s:"À faire",q:"DIY",c:"",t:"diy"},
     {p:"Reconstruction cloison étage",pv:500,rl:0,s:"À faire",q:"DIY",c:"",t:"diy"},
     {p:"Ponçage sols",pv:1800,rl:0,s:"À devis",q:"",c:"",t:"n"},
-    {p:"Chassis / menuiseries extérieures",pv:15000,rl:0,s:"À devis",q:"",c:"Commander tôt !",t:"n"},
+    {p:"Chassis / menuiseries extérieures",pv:15000,rl:21247,s:"Devis reçu",q:"Alustyl",c:"Devis 2616201 — cocontractant TVA",t:"n"},
     {p:"Aérogommage façade",pv:3200,rl:0,s:"À devis",q:"",c:"",t:"n"},
     {p:"Pose plancher chambre",pv:800,rl:0,s:"À faire",q:"",c:"~40€/m²×16m²",t:"n"},
     {p:"Sols rez-de-chaussée",pv:1800,rl:0,s:"À faire",q:"",c:"",t:"n"},
