@@ -737,25 +737,21 @@ async function analyze(){
   mInt=setInterval(()=>{const el=document.getElementById('ai-msg');if(el)el.textContent=MSGS[mi++%MSGS.length];},1500);
   try{
     const isPdf=photoMime.includes('pdf');
-    const contentItem=isPdf
-      ?{type:'document',source:{type:'base64',media_type:'application/pdf',data:photo64}}
-      :{type:'image',source:{type:'base64',media_type:photoMime,data:photo64}};
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    const GKEY='AIzaSyAQ.Ab8RN6L1tevXIBgFTHGEDr6PrMuB2mFG6vHfA6fInnZoNJzEyQ';
+    const parts=isPdf
+      ?[{inline_data:{mime_type:'application/pdf',data:photo64}},{text:'Expert devis travaux belges. Retourne UNIQUEMENT ce JSON sans markdown:{"ent":"entreprise","num":"numero date","trav":"type travaux","htva":0,"ttc":0,"postes":"ligne1
+ligne2","notes":"remarques"}'}]
+      :[{inline_data:{mime_type:photoMime,data:photo64}},{text:'Expert devis travaux belges. Retourne UNIQUEMENT ce JSON sans markdown:{"ent":"entreprise","num":"numero date","trav":"type travaux","htva":0,"ttc":0,"postes":"ligne1
+ligne2","notes":"remarques"}'}];
+    const res=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+GKEY,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-6',
-        max_tokens:1000,
-        system:'Expert devis travaux belges. Réponds UNIQUEMENT en JSON valide sans markdown ni backticks.',
-        messages:[{role:'user',content:[
-          contentItem,
-          {type:'text',text:'Analyse ce devis et retourne ce JSON:\n{"ent":"entreprise","num":"numéro · date","trav":"type travaux court","htva":0,"ttc":0,"postes":"ligne1\\nligne2\\nligne3","notes":"conditions importantes"}'}
-        ]}]
-      })
+      body:JSON.stringify({contents:[{parts}]})
     });
     clearInterval(mInt);
     const data=await res.json();
-    const parsed=JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
+    const rawText=data.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
+    const parsed=JSON.parse(rawText);
     document.getElementById('f-ent').value=parsed.ent||'';
     document.getElementById('f-num').value=parsed.num||'';
     document.getElementById('f-trav').value=parsed.trav||'';
