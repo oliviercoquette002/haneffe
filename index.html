@@ -489,8 +489,8 @@ const ACTE=new Date('2026-08-18');
 
 async function loadData(){
   try{
-    const r=await window.storage.get('haneffe_v4');
-    D=r?JSON.parse(r.value):JSON.parse(JSON.stringify(DA));
+    const r=localStorage.getItem('haneffe_v4');
+    D=r?JSON.parse(r):JSON.parse(JSON.stringify(DA));
     if(!D.devis)D.devis=JSON.parse(JSON.stringify(DA.devis));
   }catch(e){D=JSON.parse(JSON.stringify(DA));}
   syncDevisToBudget();
@@ -508,7 +508,7 @@ function syncDevisToBudget(){
 }
 
 async function save(){
-  try{await window.storage.set('haneffe_v4',JSON.stringify(D));}catch(e){}
+  try{localStorage.setItem('haneffe_v4',JSON.stringify(D));}catch(e){}
 }
 
 function fmt(n){return(parseFloat(n)||0).toLocaleString('fr-BE',{minimumFractionDigits:0,maximumFractionDigits:2})+' €';}
