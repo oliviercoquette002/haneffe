@@ -738,11 +738,10 @@ async function analyze(){
   try{
     const isPdf=photoMime.includes('pdf');
     const GKEY='AIzaSyAQ.Ab8RN6L1tevXIBgFTHGEDr6PrMuB2mFG6vHfA6fInnZoNJzEyQ';
+    const prompt='Expert devis travaux belges. Retourne UNIQUEMENT ce JSON sans markdown:{"ent":"entreprise","num":"numero date","trav":"type travaux","htva":0,"ttc":0,"postes":"ligne1\nligne2","notes":"remarques"}';
     const parts=isPdf
-      ?[{inline_data:{mime_type:'application/pdf',data:photo64}},{text:'Expert devis travaux belges. Retourne UNIQUEMENT ce JSON sans markdown:{"ent":"entreprise","num":"numero date","trav":"type travaux","htva":0,"ttc":0,"postes":"ligne1
-ligne2","notes":"remarques"}'}]
-      :[{inline_data:{mime_type:photoMime,data:photo64}},{text:'Expert devis travaux belges. Retourne UNIQUEMENT ce JSON sans markdown:{"ent":"entreprise","num":"numero date","trav":"type travaux","htva":0,"ttc":0,"postes":"ligne1
-ligne2","notes":"remarques"}'}];
+      ?[{inline_data:{mime_type:'application/pdf',data:photo64}},{text:prompt}]
+      :[{inline_data:{mime_type:photoMime,data:photo64}},{text:prompt}];
     const res=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+GKEY,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
