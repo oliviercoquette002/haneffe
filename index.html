@@ -330,11 +330,11 @@ body{font-family:-apple-system,'Inter','Segoe UI',sans-serif;background:var(--bg
       <div class="photo-grid">
         <label class="photo-opt">
           <span class="photo-ico">📷</span>Photo / Image
-          <input type="file" accept="image/*,application/pdf" style="opacity:0;position:absolute;width:0;height:0" onchange="onFile(this)">
+          <input type="file" accept="image/*,application/pdf" style="display:none" onchange="onFile(this)">
         </label>
         <label class="photo-opt">
           <span class="photo-ico">📄</span>Fichier PDF
-          <input type="file" accept="application/pdf,image/*" style="opacity:0;position:absolute;width:0;height:0" onchange="onFile(this)">
+          <input type="file" accept="application/pdf,image/*" style="display:none" onchange="onFile(this)">
         </label>
       </div>
       <p style="font-size:12px;color:var(--slate400);text-align:center;line-height:1.6">L'IA extrait automatiquement entreprise, montants et postes</p>
@@ -442,7 +442,7 @@ const DA={
     {p:"Abattage mur chambre étage",pv:500,rl:0,s:"À faire",q:"DIY",c:"",t:"diy"},
     {p:"Reconstruction cloison étage",pv:500,rl:0,s:"À faire",q:"DIY",c:"",t:"diy"},
     {p:"Ponçage sols",pv:1800,rl:0,s:"À devis",q:"",c:"",t:"n"},
-    {p:"Chassis / menuiseries extérieures",pv:15000,rl:21247,s:"Devis reçu",q:"Alustyl",c:"Devis 2616201 — cocontractant TVA",t:"n"},
+    {p:"Chassis / menuiseries extérieures",pv:15000,rl:0,s:"À devis",q:"",c:"Commander tôt !",t:"n"},
     {p:"Aérogommage façade",pv:3200,rl:0,s:"À devis",q:"",c:"",t:"n"},
     {p:"Pose plancher chambre",pv:800,rl:0,s:"À faire",q:"",c:"~40€/m²×16m²",t:"n"},
     {p:"Sols rez-de-chaussée",pv:1800,rl:0,s:"À faire",q:"",c:"",t:"n"},
@@ -489,8 +489,8 @@ const ACTE=new Date('2026-08-18');
 
 async function loadData(){
   try{
-    const r=localStorage.getItem('haneffe_v4');
-    D=r?JSON.parse(r):JSON.parse(JSON.stringify(DA));
+    const r=await window.storage.get('haneffe_v4');
+    D=r?JSON.parse(r.value):JSON.parse(JSON.stringify(DA));
     if(!D.devis)D.devis=JSON.parse(JSON.stringify(DA.devis));
   }catch(e){D=JSON.parse(JSON.stringify(DA));}
   syncDevisToBudget();
@@ -508,7 +508,7 @@ function syncDevisToBudget(){
 }
 
 async function save(){
-  try{localStorage.setItem('haneffe_v4',JSON.stringify(D));}catch(e){}
+  try{await window.storage.set('haneffe_v4',JSON.stringify(D));}catch(e){}
 }
 
 function fmt(n){return(parseFloat(n)||0).toLocaleString('fr-BE',{minimumFractionDigits:0,maximumFractionDigits:2})+' €';}
@@ -731,26 +731,32 @@ function onFile(inp){
   r.readAsDataURL(f);
 }
 async function analyze(){
+  const apiKey=localStorage.getItem('gemini_key')||(await window.storage.get('gemini_key').then(r=>r?r.value:'').catch(()=>''));
+  if(!apiKey){
+    closeM('m-scan');
+    openSettings();
+    toast('⚙️ Entrez d\'abord votre clé Gemini !');
+    return;
+  }
   document.getElementById('s2').style.display='none';
   document.getElementById('s3').style.display='block';
   let mi=0;
   mInt=setInterval(()=>{const el=document.getElementById('ai-msg');if(el)el.textContent=MSGS[mi++%MSGS.length];},1500);
   try{
-    const isPdf=photoMime.includes('pdf');
-    const GKEY='AIzaSyAQ.Ab8RN6L1tevXIBgFTHGEDr6PrMuB2mFG6vHfA6fInnZoNJzEyQ';
-    const prompt='Expert devis travaux belges. Retourne UNIQUEMENT ce JSON sans markdown:{"ent":"entreprise","num":"numero date","trav":"type travaux","htva":0,"ttc":0,"postes":"ligne1\nligne2","notes":"remarques"}';
-    const parts=isPdf
-      ?[{inline_data:{mime_type:'application/pdf',data:photo64}},{text:prompt}]
-      :[{inline_data:{mime_type:photoMime,data:photo64}},{text:prompt}];
-    const res=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+GKEY,{
+    const prompt='Analyse ce devis de travaux belge et retourne UNIQUEMENT ce JSON valide sans markdown:\n{"ent":"nom entreprise","num":"numéro · date","trav":"type travaux en 5 mots","htva":0,"ttc":0,"postes":"poste1 montant€\nposte2 montant€","notes":"conditions importantes"}';
+    const res=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='+apiKey,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({contents:[{parts}]})
+      body:JSON.stringify({contents:[{parts:[
+        {inline_data:{mime_type:photoMime,data:photo64}},
+        {text:prompt}
+      ]}]})
     });
     clearInterval(mInt);
     const data=await res.json();
-    const rawText=data.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
-    const parsed=JSON.parse(rawText);
+    if(data.error){throw new Error(data.error.message);}
+    const raw=data.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
+    const parsed=JSON.parse(raw);
     document.getElementById('f-ent').value=parsed.ent||'';
     document.getElementById('f-num').value=parsed.num||'';
     document.getElementById('f-trav').value=parsed.trav||'';
@@ -763,8 +769,8 @@ async function analyze(){
   }catch(e){
     clearInterval(mInt);
     const el=document.getElementById('ai-msg');
-    if(el)el.textContent='❌ Erreur — vérifiez que le fichier est lisible';
-    setTimeout(resetScan,2500);
+    if(el)el.textContent='❌ Erreur: '+(e.message||'vérifiez votre clé API');
+    setTimeout(()=>{document.getElementById('s3').style.display='none';document.getElementById('s2').style.display='block';},3000);
   }
 }
 
@@ -973,6 +979,37 @@ function delPhoto(i){
   }
 }
 
+
+// SETTINGS
+async function openSettings(){
+  const key=localStorage.getItem('gemini_key')||'';
+  document.getElementById('s-apikey').value=key;
+  document.getElementById('s-status').textContent=key?'✅ Clé sauvegardée':'Aucune clé configurée';
+  openM('m-settings');
+}
+
+async function testAndSaveKey(){
+  const key=document.getElementById('s-apikey').value.trim();
+  if(!key){document.getElementById('s-status').textContent='❌ Entrez une clé';return;}
+  document.getElementById('s-status').textContent='🔄 Test en cours...';
+  try{
+    const res=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='+key,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{text:'Réponds juste "ok"'}]}]})
+    });
+    const data=await res.json();
+    if(data.error)throw new Error(data.error.message);
+    localStorage.setItem('gemini_key',key);
+    try{await window.storage.set('gemini_key',key);}catch(e){}
+    document.getElementById('s-status').textContent='✅ Clé valide et sauvegardée !';
+    setTimeout(()=>closeM('m-settings'),1500);
+    toast('✅ Clé Gemini configurée — vous pouvez analyser vos devis !');
+  }catch(e){
+    document.getElementById('s-status').textContent='❌ Clé invalide : '+(e.message||'erreur');
+  }
+}
+
 function renderAll(){renderHome();renderBudget();renderPlanning();renderDevis();renderPhotos();}
 loadData().then(renderAll);
 </script>
@@ -1013,6 +1050,31 @@ loadData().then(renderAll);
     <div class="mbtns">
       <button class="mbtn-c" onclick="closeM('m-photo')">Annuler</button>
       <button class="mbtn-s" onclick="savePhoto()">💾 Sauvegarder</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL SETTINGS -->
+<div class="modal-overlay" id="m-settings">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <div class="mtitle">⚙️ Configuration IA</div>
+    <div class="alert info" style="margin-bottom:16px">
+      <span>ℹ️</span>
+      <div>
+        <strong>Clé Gemini gratuite</strong> — 1500 analyses/jour.<br>
+        Obtenir votre clé sur <strong>aistudio.google.com</strong> → Get API key → Create API key.
+      </div>
+    </div>
+    <div class="field">
+      <label>Clé API Gemini</label>
+      <input type="password" id="s-apikey" placeholder="AIza..." autocomplete="off">
+    </div>
+    <div id="s-status" style="font-size:12px;color:var(--slate400);margin-bottom:12px;min-height:18px"></div>
+    <div class="mbtns">
+      <button class="mbtn-c" onclick="closeM('m-settings')">Fermer</button>
+      <button class="mbtn-s" onclick="testAndSaveKey()">✅ Tester et sauvegarder</button>
     </div>
   </div>
 </div>
