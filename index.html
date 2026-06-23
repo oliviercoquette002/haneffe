@@ -744,10 +744,8 @@ async function analyze(){
   mInt=setInterval(()=>{const el=document.getElementById('ai-msg');if(el)el.textContent=MSGS[mi++%MSGS.length];},1500);
   try{
     const prompt='Analyse ce devis de travaux belge et retourne UNIQUEMENT ce JSON valide sans markdown:\n{"ent":"nom entreprise","num":"numéro · date","trav":"type travaux en 5 mots","htva":0,"ttc":0,"postes":"poste1 montant€\nposte2 montant€","notes":"conditions importantes"}';
-    const isBearer=apiKey.startsWith('AQ.');
-    const url='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'+(isBearer?'':'?key='+apiKey);
-    const headers={'Content-Type':'application/json'};
-    if(isBearer)headers['Authorization']='Bearer '+apiKey;
+    const url='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+    const headers={'Content-Type':'application/json','x-goog-api-key':apiKey};
     const res=await fetch(url,{
       method:'POST',
       headers,
@@ -997,10 +995,8 @@ async function testAndSaveKey(){
   if(!key){document.getElementById('s-status').textContent='❌ Entrez une clé';return;}
   document.getElementById('s-status').textContent='🔄 Test en cours...';
   try{
-    const isBearer=key.startsWith('AQ.');
-    const url='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'+(isBearer?'':'?key='+key);
-    const headers={'Content-Type':'application/json'};
-    if(isBearer)headers['Authorization']='Bearer '+key;
+    const url='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+    const headers={'Content-Type':'application/json','x-goog-api-key':key};
     const res=await fetch(url,{
       method:'POST',
       headers,
