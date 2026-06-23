@@ -617,7 +617,7 @@ function saveBudget(){
   if(eBi>=0)D.budget[eBi]=row;else D.budget.push(row);
   save();closeM('m-bud');renderBudget();renderHome();
 }
-function delBudget(){if(eBi>=0)D.budget.splice(eBi,1);save();closeM('m-bud');renderBudget();}
+function delBudget(){if(!confirm('Supprimer ce poste ?'))return;if(eBi>=0){D.budget.splice(eBi,1);save();}closeM('m-bud');renderBudget();renderHome();}
 
 function renderPlanning(){
   const phases=[{n:1,l:'Préparation du déménagement',items:D.p1},{n:2,l:'Installation & emménagement',items:D.p2},{n:3,l:'Travaux après emménagement',items:D.p3}];
