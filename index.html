@@ -746,7 +746,7 @@ async function analyze(){
     const prompt='Analyse ce devis de travaux belge et retourne UNIQUEMENT ce JSON valide sans markdown:\n{"ent":"nom entreprise","num":"numéro · date","trav":"type travaux en 5 mots","htva":0,"ttc":0,"postes":"poste1 montant€\nposte2 montant€","notes":"conditions importantes"}';
     const imgData=`data:${photoMime.includes('pdf')?'image/jpeg':photoMime};base64,${photo64}`;
     // Essayer les modèles vision disponibles sur Groq dans l'ordre
-    const VISION_MODELS=['llama-4-scout-17b-16e-instruct','llama-4-maverick-17b-128e-instruct','llama-3.2-11b-vision-preview'];
+    const VISION_MODELS=['meta-llama/llama-4-scout-17b-16e-instruct','meta-llama/llama-4-maverick-17b-128e-instruct'];
     let data=null;
     for(const model of VISION_MODELS){
       const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
@@ -1001,7 +1001,7 @@ async function testAndSaveKey(){
   document.getElementById('s-status').textContent='🔄 Test en cours...';
   try{
     // Détecter le bon modèle disponible
-    const models=['llama-4-scout-17b-16e-instruct','llama-4-maverick-17b-128e-instruct','llama-3.2-11b-vision-preview'];
+    const models=['meta-llama/llama-4-scout-17b-16e-instruct','meta-llama/llama-4-maverick-17b-128e-instruct'];
     let data=null,goodModel=null;
     for(const m of models){
       const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
