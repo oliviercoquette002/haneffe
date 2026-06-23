@@ -745,20 +745,22 @@ async function analyze(){
   try{
     const prompt='Analyse ce devis de travaux belge et retourne UNIQUEMENT ce JSON valide sans markdown:\n{"ent":"nom entreprise","num":"numéro · date","trav":"type travaux en 5 mots","htva":0,"ttc":0,"postes":"poste1 montant€\nposte2 montant€","notes":"conditions importantes"}';
     const imgData=`data:${photoMime.includes('pdf')?'image/jpeg':photoMime};base64,${photo64}`;
-    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-      body:JSON.stringify({
-        model:'llama-3.2-90b-vision-preview',
-        max_tokens:1000,
-        messages:[{role:'user',content:[
+    // Essayer les modèles vision disponibles sur Groq dans l'ordre
+    const VISION_MODELS=['llama-4-scout-17b-16e-instruct','llama-4-maverick-17b-128e-instruct','llama-3.2-11b-vision-preview'];
+    let data=null;
+    for(const model of VISION_MODELS){
+      const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+        body:JSON.stringify({model,max_tokens:1000,messages:[{role:'user',content:[
           {type:'image_url',image_url:{url:imgData}},
           {type:'text',text:prompt}
-        ]}]
-      })
-    });
+        ]}]})
+      });
+      data=await r.json();
+      if(!data.error||(data.error&&!data.error.message.includes('decommissioned')&&!data.error.message.includes('does not exist')))break;
+    }
     clearInterval(mInt);
-    const data=await res.json();
     if(data.error){throw new Error(data.error.message||JSON.stringify(data.error));}
     const raw=data.choices[0].message.content.replace(/```json|```/g,'').trim();
     const parsed=JSON.parse(raw);
@@ -998,13 +1000,21 @@ async function testAndSaveKey(){
   if(!key){document.getElementById('s-status').textContent='❌ Entrez une clé';return;}
   document.getElementById('s-status').textContent='🔄 Test en cours...';
   try{
-    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
-      body:JSON.stringify({model:'llama-3.2-90b-vision-preview',max_tokens:10,messages:[{role:'user',content:'ok?'}]})
-    });
-    const data=await res.json();
+    // Détecter le bon modèle disponible
+    const models=['llama-4-scout-17b-16e-instruct','llama-4-maverick-17b-128e-instruct','llama-3.2-11b-vision-preview'];
+    let data=null,goodModel=null;
+    for(const m of models){
+      const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+        body:JSON.stringify({model:m,max_tokens:10,messages:[{role:'user',content:'ok?'}]})
+      });
+      data=await r.json();
+      if(!data.error){goodModel=m;break;}
+      if(data.error&&!data.error.message.includes('decommissioned')&&!data.error.message.includes('does not exist'))break;
+    }
     if(data.error)throw new Error(data.error.message||JSON.stringify(data.error));
+    document.getElementById('s-status').textContent='✅ Clé valide ! Modèle : '+goodModel;
     localStorage.setItem('gemini_key',key);
     try{await window.storage.set('gemini_key',key);}catch(e){}
     document.getElementById('s-status').textContent='✅ Clé valide et sauvegardée !';
