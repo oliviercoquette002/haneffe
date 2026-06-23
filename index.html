@@ -749,46 +749,112 @@ async function pdfToImage(base64Pdf){
   }catch(e){throw new Error('Erreur conversion PDF: '+e.message);}
 }
 
+async function extractPdfText(b64){
+  try{
+    const bin=atob(b64),bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+    const pdf=await pdfjsLib.getDocument({data:bytes}).promise;
+    let txt='';
+    for(let p=1;p<=Math.min(pdf.numPages,6);p++){
+      const pg=await pdf.getPage(p);
+      const tc=await pg.getTextContent();
+      txt+=tc.items.map(i=>i.str).join(' ')+'\n--- PAGE '+p+' ---\n';
+    }
+    return txt.trim();
+  }catch(e){return '';}
+}
+
 async function analyze(){
-  const apiKey=localStorage.getItem('gemini_key')||(await window.storage.get('gemini_key').then(r=>r?r.value:'').catch(()=>''));
-  if(!apiKey){
-    closeM('m-scan');
-    openSettings();
-    toast('⚙️ Entrez d\'abord votre clé Gemini !');
-    return;
-  }
+  const apiKey=localStorage.getItem('gemini_key')||localStorage.getItem('groq_key')||(await window.storage.get('gemini_key').then(r=>r?r.value:'').catch(()=>''));
+  if(!apiKey){closeM('m-scan');openSettings();toast('⚙️ Entrez votre clé Groq !');return;}
   document.getElementById('s2').style.display='none';
   document.getElementById('s3').style.display='block';
   let mi=0;
   mInt=setInterval(()=>{const el=document.getElementById('ai-msg');if(el)el.textContent=MSGS[mi++%MSGS.length];},1500);
+
+  const PROMPT=`Tu es comptable expert en devis de travaux belges. Retourne UNIQUEMENT ce JSON (pas de markdown, pas d'explication):
+{"ent":"nom entreprise","num":"numero devis · date","trav":"type travaux court","htva":0,"ttc":0,"postes":"article1 : prix€\\narticle2 : prix€","notes":"conditions"}
+RÈGLES: 
+- Cherche TOTAL, MONTANT, HTVA, TTC, TVAC, TVA COMPRISE dans tout le texte
+- Format belge: 15.234,56 EUR = 15234.56 en JSON  
+- Si 1 seul total visible: c'est ttc, htva=ttc/1.06
+- Liste tous les articles/postes avec prix
+- htva et ttc = nombres décimaux obligatoires`;
+
   try{
-    const prompt='Analyse ce devis de travaux belge et retourne UNIQUEMENT ce JSON valide sans markdown:\n{"ent":"nom entreprise","num":"numéro · date","trav":"type travaux en 5 mots","htva":0,"ttc":0,"postes":"poste1 montant€\nposte2 montant€","notes":"conditions importantes"}';
-    let imgBase64=photo64;
-    if(photoMime.includes('pdf')){
-      const el=document.getElementById('ai-msg');
-      if(el)el.textContent='📄 Conversion PDF en image...';
-      imgBase64=await pdfToImage(photo64);
-    }
-    const imgData=`data:image/jpeg;base64,${imgBase64}`;
-    // Essayer les modèles vision disponibles sur Groq dans l'ordre
-    const VISION_MODELS=['meta-llama/llama-4-scout-17b-16e-instruct','meta-llama/llama-4-maverick-17b-128e-instruct'];
     let data=null;
-    for(const model of VISION_MODELS){
-      const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-        body:JSON.stringify({model,max_tokens:1000,messages:[{role:'user',content:[
-          {type:'image_url',image_url:{url:imgData}},
-          {type:'text',text:prompt}
-        ]}]})
-      });
-      data=await r.json();
-      if(!data.error||(data.error&&!data.error.message.includes('decommissioned')&&!data.error.message.includes('does not exist')))break;
+
+    if(photoMime.includes('pdf')){
+      // ÉTAPE 1: Extraire le texte du PDF
+      const msg=document.getElementById('ai-msg');
+      if(msg)msg.textContent='📄 Extraction du texte...';
+      const pdfText=await extractPdfText(photo64);
+
+      if(pdfText && pdfText.length>30){
+        // ÉTAPE 2: Envoyer le texte au modèle texte (très précis)
+        if(msg)msg.textContent='🧠 Analyse du texte...';
+        const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+          body:JSON.stringify({
+            model:'llama-3.3-70b-versatile',
+            max_tokens:1500,temperature:0,
+            messages:[
+              {role:'system',content:'Expert comptable belge. Réponds UNIQUEMENT avec du JSON valide.'},
+              {role:'user',content:PROMPT+'\n\nTEXTE DU DEVIS:\n'+pdfText}
+            ]
+          })
+        });
+        data=await res.json();
+      }
+
+      // ÉTAPE 3: Si pas de montants trouvés, essayer avec image du PDF
+      if(!data||data.error||!data.choices){
+        if(msg)msg.textContent='🖼️ Analyse visuelle...';
+        const imgB64=await pdfToImage(photo64);
+        const imgUrl='data:image/jpeg;base64,'+imgB64;
+        const MODELS=['meta-llama/llama-4-scout-17b-16e-instruct','meta-llama/llama-4-maverick-17b-128e-instruct'];
+        for(const m of MODELS){
+          const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+            method:'POST',
+            headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+            body:JSON.stringify({model:m,max_tokens:1500,temperature:0,
+              messages:[{role:'user',content:[
+                {type:'image_url',image_url:{url:imgUrl,detail:'high'}},
+                {type:'text',text:PROMPT}
+              ]}]
+            })
+          });
+          data=await r.json();
+          if(!data.error||(!data.error.message.includes('decommissioned')&&!data.error.message.includes('does not exist')))break;
+        }
+      }
+    } else {
+      // IMAGE: modèle vision directement
+      const imgUrl='data:image/jpeg;base64,'+photo64;
+      const MODELS=['meta-llama/llama-4-scout-17b-16e-instruct','meta-llama/llama-4-maverick-17b-128e-instruct'];
+      for(const m of MODELS){
+        const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+          body:JSON.stringify({model:m,max_tokens:1500,temperature:0,
+            messages:[{role:'user',content:[
+              {type:'image_url',image_url:{url:imgUrl,detail:'high'}},
+              {type:'text',text:PROMPT}
+            ]}]
+          })
+        });
+        data=await r.json();
+        if(!data.error||(!data.error.message.includes('decommissioned')&&!data.error.message.includes('does not exist')))break;
+      }
     }
+
     clearInterval(mInt);
-    if(data.error){throw new Error(data.error.message||JSON.stringify(data.error));}
+    if(!data||data.error)throw new Error(data?.error?.message||'Erreur API');
     const raw=data.choices[0].message.content.replace(/```json|```/g,'').trim();
-    const parsed=JSON.parse(raw);
+    const jmatch=raw.match(/\{[\s\S]*\}/);
+    if(!jmatch)throw new Error('Réponse invalide — réessayez');
+    const parsed=JSON.parse(jmatch[0]);
     document.getElementById('f-ent').value=parsed.ent||'';
     document.getElementById('f-num').value=parsed.num||'';
     document.getElementById('f-trav').value=parsed.trav||'';
