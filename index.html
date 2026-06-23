@@ -791,7 +791,16 @@ RÈGLES:
       const pdfText=await extractPdfText(photo64);
 
       if(pdfText && pdfText.length>30){
-        // ÉTAPE 2: Envoyer le texte au modèle texte (très précis)
+        // Pré-extraction regex des montants belges (ex: 21.247,00 EUR)
+        const amtRx=/(\d{1,3}(?:\.\d{3})*,\d{2})\s*EUR/gi;
+        const allAmts=[...pdfText.matchAll(amtRx)].map(m=>parseFloat(m[1].replace(/\./g,'').replace(',','.')));
+        const uniqAmts=[...new Set(allAmts)].sort((a,b)=>b-a);
+        const htvaRx=pdfText.match(/Total\s+HT\s+net[^\d]*(\d{1,3}(?:\.\d{3})*,\d{2})/i);
+        const ttcRx=pdfText.match(/(?:Somme|Total\s+TTC|TVAC)[^\d]*(\d{1,3}(?:\.\d{3})*,\d{2})/i);
+        const preHtva=htvaRx?parseFloat(htvaRx[1].replace(/\./g,'').replace(',','.')):0;
+        const preTtc=ttcRx?parseFloat(ttcRx[1].replace(/\./g,'').replace(',','.')):0;
+
+        // Envoyer le texte au modèle texte
         if(msg)msg.textContent='🧠 Analyse du texte...';
         const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
           method:'POST',
@@ -800,12 +809,22 @@ RÈGLES:
             model:'llama-3.3-70b-versatile',
             max_tokens:1500,temperature:0,
             messages:[
-              {role:'system',content:'Expert comptable belge. Réponds UNIQUEMENT avec du JSON valide.'},
-              {role:'user',content:PROMPT+'\n\nTEXTE DU DEVIS:\n'+pdfText}
+              {role:'system',content:'Expert comptable belge. Réponds UNIQUEMENT avec du JSON valide, aucun autre texte.'},
+              {role:'user',content:PROMPT+'\n\nMontants détectés: HTVA='+preHtva+' TTC='+preTtc+'\nListe montants: '+uniqAmts.slice(0,10).join(', ')+'\n\nTEXTE:\n'+pdfText.substring(0,5000)}
             ]
           })
         });
         data=await res.json();
+        // Fallback: si l'IA rate les montants, utiliser les valeurs regex
+        if(data&&!data.error&&data.choices){
+          try{
+            const raw2=data.choices[0].message.content.replace(/\`\`\`json|\`\`\`/g,'').trim();
+            const j=JSON.parse((raw2.match(/\{[\s\S]*\}/)||['{}'])[0]);
+            if((!j.htva||j.htva<1)&&preHtva>0)j.htva=preHtva;
+            if((!j.ttc||j.ttc<1)&&preTtc>0)j.ttc=preTtc;
+            data._parsed=j;
+          }catch(e){}
+        }
       }
 
       // ÉTAPE 3: Si pas de montants trouvés, essayer avec image du PDF
@@ -851,10 +870,15 @@ RÈGLES:
 
     clearInterval(mInt);
     if(!data||data.error)throw new Error(data?.error?.message||'Erreur API');
-    const raw=data.choices[0].message.content.replace(/```json|```/g,'').trim();
-    const jmatch=raw.match(/\{[\s\S]*\}/);
-    if(!jmatch)throw new Error('Réponse invalide — réessayez');
-    const parsed=JSON.parse(jmatch[0]);
+    let parsed;
+    if(data._parsed){
+      parsed=data._parsed;
+    }else{
+      const raw=data.choices[0].message.content.replace(/```json|```/g,'').trim();
+      const jmatch=raw.match(/\{[\s\S]*\}/);
+      if(!jmatch)throw new Error('Réponse invalide — réessayez');
+      parsed=JSON.parse(jmatch[0]);
+    }
     document.getElementById('f-ent').value=parsed.ent||'';
     document.getElementById('f-num').value=parsed.num||'';
     document.getElementById('f-trav').value=parsed.trav||'';
