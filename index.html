@@ -251,6 +251,10 @@ body{font-family:-apple-system,'Inter','Segoe UI',sans-serif;background:var(--bg
 .photo-stat-val{font-size:20px;font-weight:800;color:var(--g600)}
 .photo-stat-lbl{font-size:10px;color:var(--slate400);text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+</script>
 </head>
 <body>
 <div class="topbar">
@@ -730,6 +734,21 @@ function onFile(inp){
   };
   r.readAsDataURL(f);
 }
+async function pdfToImage(base64Pdf){
+  try{
+    const binary=atob(base64Pdf);
+    const bytes=new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+    const pdf=await pdfjsLib.getDocument({data:bytes}).promise;
+    const page=await pdf.getPage(1);
+    const viewport=page.getViewport({scale:2.0});
+    const canvas=document.createElement('canvas');
+    canvas.width=viewport.width;canvas.height=viewport.height;
+    await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise;
+    return canvas.toDataURL('image/jpeg',0.85).split(',')[1];
+  }catch(e){throw new Error('Erreur conversion PDF: '+e.message);}
+}
+
 async function analyze(){
   const apiKey=localStorage.getItem('gemini_key')||(await window.storage.get('gemini_key').then(r=>r?r.value:'').catch(()=>''));
   if(!apiKey){
@@ -744,7 +763,13 @@ async function analyze(){
   mInt=setInterval(()=>{const el=document.getElementById('ai-msg');if(el)el.textContent=MSGS[mi++%MSGS.length];},1500);
   try{
     const prompt='Analyse ce devis de travaux belge et retourne UNIQUEMENT ce JSON valide sans markdown:\n{"ent":"nom entreprise","num":"numéro · date","trav":"type travaux en 5 mots","htva":0,"ttc":0,"postes":"poste1 montant€\nposte2 montant€","notes":"conditions importantes"}';
-    const imgData=`data:${photoMime.includes('pdf')?'image/jpeg':photoMime};base64,${photo64}`;
+    let imgBase64=photo64;
+    if(photoMime.includes('pdf')){
+      const el=document.getElementById('ai-msg');
+      if(el)el.textContent='📄 Conversion PDF en image...';
+      imgBase64=await pdfToImage(photo64);
+    }
+    const imgData=`data:image/jpeg;base64,${imgBase64}`;
     // Essayer les modèles vision disponibles sur Groq dans l'ordre
     const VISION_MODELS=['meta-llama/llama-4-scout-17b-16e-instruct','meta-llama/llama-4-maverick-17b-128e-instruct'];
     let data=null;
