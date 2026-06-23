@@ -744,20 +744,23 @@ async function analyze(){
   mInt=setInterval(()=>{const el=document.getElementById('ai-msg');if(el)el.textContent=MSGS[mi++%MSGS.length];},1500);
   try{
     const prompt='Analyse ce devis de travaux belge et retourne UNIQUEMENT ce JSON valide sans markdown:\n{"ent":"nom entreprise","num":"numéro · date","trav":"type travaux en 5 mots","htva":0,"ttc":0,"postes":"poste1 montant€\nposte2 montant€","notes":"conditions importantes"}';
-    const url='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-    const headers={'Content-Type':'application/json','x-goog-api-key':apiKey};
-    const res=await fetch(url,{
+    const imgData=`data:${photoMime.includes('pdf')?'image/jpeg':photoMime};base64,${photo64}`;
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
-      headers,
-      body:JSON.stringify({contents:[{parts:[
-        {inline_data:{mime_type:photoMime,data:photo64}},
-        {text:prompt}
-      ]}]})
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+      body:JSON.stringify({
+        model:'meta-llama/llama-4-maverick-17b-128e-instruct',
+        max_tokens:1000,
+        messages:[{role:'user',content:[
+          {type:'image_url',image_url:{url:imgData}},
+          {type:'text',text:prompt}
+        ]}]
+      })
     });
     clearInterval(mInt);
     const data=await res.json();
-    if(data.error){throw new Error(data.error.message);}
-    const raw=data.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
+    if(data.error){throw new Error(data.error.message||JSON.stringify(data.error));}
+    const raw=data.choices[0].message.content.replace(/```json|```/g,'').trim();
     const parsed=JSON.parse(raw);
     document.getElementById('f-ent').value=parsed.ent||'';
     document.getElementById('f-num').value=parsed.num||'';
@@ -995,15 +998,13 @@ async function testAndSaveKey(){
   if(!key){document.getElementById('s-status').textContent='❌ Entrez une clé';return;}
   document.getElementById('s-status').textContent='🔄 Test en cours...';
   try{
-    const url='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-    const headers={'Content-Type':'application/json','x-goog-api-key':key};
-    const res=await fetch(url,{
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
-      headers,
-      body:JSON.stringify({contents:[{parts:[{text:'Réponds juste "ok"'}]}]})
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({model:'meta-llama/llama-4-maverick-17b-128e-instruct',max_tokens:10,messages:[{role:'user',content:'ok?'}]})
     });
     const data=await res.json();
-    if(data.error)throw new Error(data.error.message);
+    if(data.error)throw new Error(data.error.message||JSON.stringify(data.error));
     localStorage.setItem('gemini_key',key);
     try{await window.storage.set('gemini_key',key);}catch(e){}
     document.getElementById('s-status').textContent='✅ Clé valide et sauvegardée !';
@@ -1064,16 +1065,18 @@ loadData().then(renderAll);
   <div class="modal">
     <div class="mhandle"></div>
     <div class="mtitle">⚙️ Configuration IA</div>
-    <div class="alert info" style="margin-bottom:16px">
-      <span>ℹ️</span>
+    <div class="alert ok" style="margin-bottom:16px">
+      <span>✅</span>
       <div>
-        <strong>Clé Gemini gratuite</strong> — 1500 analyses/jour.<br>
-        Obtenir votre clé sur <strong>aistudio.google.com</strong> → Get API key → Create API key.
+        <strong>Clé Groq gratuite</strong> — analyses illimitées !<br>
+        1. Va sur <strong>console.groq.com</strong><br>
+        2. Sign up → API Keys → Create API Key<br>
+        3. Copie la clé (commence par <strong>gsk_...</strong>)
       </div>
     </div>
     <div class="field">
-      <label>Clé API Gemini</label>
-      <input type="password" id="s-apikey" placeholder="AIza..." autocomplete="off">
+      <label>Clé API Groq</label>
+      <input type="password" id="s-apikey" placeholder="gsk_..." autocomplete="off">
     </div>
     <div id="s-status" style="font-size:12px;color:var(--slate400);margin-bottom:12px;min-height:18px"></div>
     <div class="mbtns">
